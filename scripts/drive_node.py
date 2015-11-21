@@ -2,20 +2,16 @@
 
 import serial
 import rospy
+import struct
+from robotics_project.srv import *
 
-def DriveNode():
+class DriveNode():
     def __init__(self):
         self.connection = None
         self.drive_struct = struct.Struct('>Bhh')
+        self.angle_struct = struct.Struct('>BB')
         self.angle_request = self.make_angle_request()
         self.port = '/dev/ttyUSB0'
-        rospy.init_node('DriveNode')
-        self.drive_service = rospy.Service('requestDrive', requestDrive,
-                                 self.handle_requestDrive)
-        self.angle_service = rospy.Service('requestAngle', requestAngle,
-                                           self.handle_requestAngle)
-        self.connect_robot()
-        rospy.spin()
         self.command_dict = {
             'start':self.make_raw_command('128'),
             'safe':self.make_raw_command('131'),
@@ -26,6 +22,13 @@ def DriveNode():
             'dock':self.make_raw_command('143'),
             'reset':self.make_raw_command('7')
         }
+        rospy.init_node('drive_node')
+        self.drive_service = rospy.Service('requestDrive', requestDrive,
+                                 self.handle_requestDrive)
+        self.angle_service = rospy.Service('requestAngle', requestAngle,
+                                           self.handle_requestAngle)
+        self.connect_robot()
+        rospy.spin()
 
     def make_drive_command(self, vel, rot):
         #this is to keep vl and vr between -500 and 500 
@@ -60,7 +63,7 @@ def DriveNode():
         self.connection.write(drive_command)
 
     def make_angle_request(self):
-        req = struct.Pack('>BB', 142, 20)
+        req = self.angle_struct.pack(142, 20)
         return req
 
     def handle_requestAngle(self, request):
@@ -75,3 +78,6 @@ def DriveNode():
         raw_angle = self.connection.read(2)
         angle = struct.unpack('>h', raw_angle)
         return angle
+
+if __name__ == "__main__":
+    driver_node = DriveNode()

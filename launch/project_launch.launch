@@ -1,0 +1,18 @@
+<launch>
+    <env name = "GSCAM_CONFIG" value = "v4l2src device=/dev/video0 !
+        video/x-raw-rgb,framerate-25/1 ! ffmpegcolorspace" />
+
+    <node pkg="gscam" name="web_cam" type="gscam">
+        <param name = "camera_name" value = "web_cam" />
+        <remap from = "camera/image_raw" to = "camera/visible/image" />
+    </node>
+
+    <!--
+    <node pkg="robotics_project" name="camera_node" type="camera_node.py" output="screen" />
+    -->
+
+    <node pkg="robotics_project" name="drive_node" type="drive_node.py" output="screen" />
+
+    <node pkg="rqt_image_view" name="rqt_image_view" type="rqt_image_view" />
+
+</launch>
