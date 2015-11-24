@@ -13,6 +13,7 @@ class CameraNode():
     def __init__(self):
         """Start camera_node and setup publishers/subscribers"""
         self.bridge = CvBridge()
+        self.testing = False
         self.image_pub = rospy.Publisher("/camera_node/processed_image",
                                          Image,
                                          queue_size = 10)
@@ -88,7 +89,7 @@ class CameraNode():
         hsv_image = self._convert_raw_2_hsv(raw_ros_image)
         mask, masked_image = self._process_image(hsv_image)
         center = self._find_center(mask)
-        if center is not None:
+        if (center is not None) and (self.testing == True):
             velocity, rotation = self._follow_ball(center, (640, 480))
             print velocity, rotation
             self.drive_robot(velocity, rotation)
