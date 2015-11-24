@@ -27,8 +27,26 @@ class DriveNode():
                                  self.handle_requestDrive)
         self.angle_service = rospy.Service('requestAngle', requestAngle,
                                            self.handle_requestAngle)
+        self.strike_service = rospy.Service('requestStrike', requestStrike,
+                                            self.strike_forward)
         self.connect_robot()
+        print "sleeping"
+        rospy.sleep(3)
+        print "striking"
+        self.strike_forward()
         rospy.spin()
+
+    def strike_forward(self):
+        vel = 500
+        rot = 0
+        strike_cmd = self.make_drive_command(vel, rot)
+        stop_cmd = self.make_drive_command(0,0)
+        print "Strike_cmd", strike_cmd
+        print "stop_cmd", stop_cmd
+        self.connection.write(strike_cmd)
+        rospy.sleep(.7)
+        self.connection.write(stop_cmd)
+        return "Striking"
 
     def make_drive_command(self, vel, rot):
         #this is to keep vl and vr between -500 and 500 
@@ -59,7 +77,8 @@ class DriveNode():
             print "Connection failed."
         else:
             self.connection.write(self.command_dict['start'])
-            self.connection.write(self.command_dict['safe'])
+            self.connection.write(self.command_dict['full'])
+            self.connection.write(self.command_dict['beep'])
 
     def handle_requestDrive(self, request):
         vel = request.velocity
