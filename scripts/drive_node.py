@@ -48,13 +48,18 @@ class DriveNode():
         if self.connection is not None:
             print "Already connected!"
             return
-        self.connection = serial.Serial(
-                self.port,
-                baudrate=115200,
-                timeout=1
-        )
-        self.connection.write(self.command_dict['start'])
-        self.connection.write(self.command_dict['safe'])
+        try:
+            self.connection = serial.Serial(
+                    self.port,
+                    baudrate=115200,
+                    timeout=1
+            )
+            print "Connected to robot."
+        except:
+            print "Connection failed."
+        else:
+            self.connection.write(self.command_dict['start'])
+            self.connection.write(self.command_dict['safe'])
 
     def handle_requestDrive(self, request):
         vel = request.velocity
