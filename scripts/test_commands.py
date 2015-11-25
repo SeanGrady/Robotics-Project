@@ -15,6 +15,8 @@ def rcom(string):
 
 start = rcom('128')
 safe = rcom('131')
+shutdown_cmd = rcom('173')
+connection.write(shutdown_cmd)
 connection.write(start)
 connection.write(safe)
 
@@ -26,11 +28,3 @@ def read_ang():
     angle = struct.unpack('>h', read_vals)
     return angle, read_vals
 
-def shutdown():
-    shutdown_cmd = rcom('173')
-    connection.write(shutdown_cmd)
-
-angle, read_vals = read_ang()
-print angle
-
-interact(local=locals())
