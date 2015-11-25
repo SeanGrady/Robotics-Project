@@ -36,7 +36,7 @@ class ControllerNode():
             offset = self.objectPose.ball_center_x - 320
             print offset
             #turn_rate = copysign(1.0, offset)*50
-            turn_rate = offset/10
+            turn_rate = max([offset/10, 10])
             print turn_rate
             self.drive_robot(0, turn_rate)
         print "centered ball, sending stop command"

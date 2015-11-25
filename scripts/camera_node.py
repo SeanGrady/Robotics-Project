@@ -12,7 +12,7 @@ from collections import deque
 from robotics_project.msg import objectPose
 
 drawBall = True
-drawGoal = True
+drawGoal = False
 
 #ball_hsv_color = (179, 184, 143)
 ball_hsv_color = (0, 167, 206)
