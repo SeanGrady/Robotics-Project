@@ -74,7 +74,7 @@ class CameraNode():
         self.wList.append(bh)
         self.wList.popleft()
         self.currentWidthGuess = round(sum(self.wList)/10.0)
-        centerX = bx + (self.currentWidthGuess/2)
+        centerX = x + (self.currentWidthGuess/2)
         print "x=" + str(bx) + ",  y=" + str(by)
         print centerX
         bPoint1, bPoint2 = (bx, by), (bx+bw, by+bh)
