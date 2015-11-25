@@ -26,6 +26,10 @@ def read_ang():
     angle = struct.unpack('>h', read_vals)
     return angle, read_vals
 
+def shutdown():
+    shutdown_cmd = rcom('173')
+    connection.write(shutdown_cmd)
+
 angle, read_vals = read_ang()
 print angle
 
