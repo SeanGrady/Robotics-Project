@@ -1,0 +1,9 @@
+Header header
+int8 ball_in_view
+float64 ball_center_y
+int64 ball_width
+float64 ball_distance
+int8 goal_in_view
+float64 goal_center_y
+int64 goal_width
+float64 goal_distance
