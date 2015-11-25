@@ -11,6 +11,9 @@ from code import interact
 from collections import deque
 from robotics_project.msg import objectPose
 
+drawBall = True
+drawGoal = True
+
 #ball_hsv_color = (179, 184, 143)
 ball_hsv_color = (0, 167, 206)
 #ball_threshold = (50, 70, 70)
@@ -159,13 +162,15 @@ class CameraNode():
         # publish objectPose message
         self.objectPosePub.publish(objectPoseMessage)
         # draw ball rectangle on image
-        #bPoint1, bPoint2 = (bx, by), (bx+bw, by+bh)
-        #cv2.rectangle(masked_image, bPoint1, bPoint2, [255, 255, 255], 2)
-        #cv2.rectangle(hsv_image, bPoint1, bPoint2, [255, 255, 255], 2)
+        if drawBall:            
+            bPoint1, bPoint2 = (bx, by), (bx+bw, by+bh)
+            #cv2.rectangle(masked_image, bPoint1, bPoint2, [255, 255, 255], 2)
+            cv2.rectangle(hsv_image, bPoint1, bPoint2, [255, 255, 255], 2)
         # draw goal rectangle on image
-        gPoint1, gPoint2 = (gx, gy), (gx+gw, gy+gh)
-        #cv2.rectangle(masked_image, bPoint1, bPoint2, [255, 255, 255], 2)
-        cv2.rectangle(hsv_image, gPoint1, gPoint2, [255, 255, 255], 2)
+        if drawGoal:
+            gPoint1, gPoint2 = (gx, gy), (gx+gw, gy+gh)
+            #cv2.rectangle(masked_image, bPoint1, bPoint2, [255, 255, 255], 2)
+            cv2.rectangle(hsv_image, gPoint1, gPoint2, [255, 255, 255], 2)
         return hsv_image
         #return cv2.bitwise_and(hsv_image, hsv_image, mask = gMask)
 
