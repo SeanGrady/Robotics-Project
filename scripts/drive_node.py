@@ -30,10 +30,6 @@ class DriveNode():
         self.strike_service = rospy.Service('requestStrike', requestStrike,
                                             self.strike_forward)
         self.connect_robot()
-        print "sleeping"
-        rospy.sleep(3)
-        print "striking"
-        self.strike_forward()
         rospy.spin()
 
     def strike_forward(self):

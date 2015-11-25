@@ -9,9 +9,14 @@ from cv_bridge import CvBridge, CvBridgeError
 import colorsys
 from code import interact
 from collections import deque
+from robotics_project.msg import objectPose
 
-ball_hsv_color = (179, 184, 143)
-ball_threshold = (50, 70, 70)
+#ball_hsv_color = (179, 184, 143)
+ball_hsv_color = (5, 166, 197)
+#ball_threshold = (50, 70, 70)
+ball_threshold = (40, 40, 40)
+goal_hsv_color = (33, 33, 33) ##   This still needs to be calculated
+goal_threshold = (50, 70, 70) ##   This still needs to be calculated
 openKernSizeForClose = 80
 openKernSizeForFar = 40
 closeKernSizeForClose = 50
@@ -22,8 +27,12 @@ class CameraNode():
         """Start camera_node and setup publishers/subscribers"""
         self.bridge = CvBridge()
         self.testing = False
-        self.wList = deque([0]*10)
-        self.currentWidthGuess = 0
+        self.ballWidthList = deque([0]*10)
+        self.ballWidth = 0
+        self.goalWidthList = deque([0]*10)
+        self.goalWidth = 0
+        self.objectPosePub = rospy.Publisher("/camera_node/objectPose", 
+                                            objectPose, queue_size = 10)
         self.image_pub = rospy.Publisher("/camera_node/processed_image",
                                          Image,
                                          queue_size = 10)
@@ -66,17 +75,53 @@ class CameraNode():
         binary_image = cv2.inRange(hsv_image, hsv_lower, hsv_upper)
         return binary_image
 
+    # function to calculate distance from width for the ball
+    def _calcBallDist(self, bw):
+        if bw != -1:
+            return (4997 * (bw**(-0.95)))
+        else:
+            return -1
+
+    # function to calculate distance from width for the goal ############# <--- Still needs to be done!!!!
+    def _calcGoalDist(self, gw):
+        if gw!=-1:
+            return (13525 * (gw**(-1.24)))
+        else:
+            return -1
+        
     # function to find ball and goal and transmit the objectPose message to topic objectPose 
     def _process_image(self, hsv_image):
         # find ball
         bx, by, bw, bh = self.findObject(hsv_image, ball_hsv_color, ball_threshold, 
                                          openKernSizeForClose, closeKernSizeForFar)
-        self.wList.append(bh)
-        self.wList.popleft()
-        self.currentWidthGuess = round(sum(self.wList)/10.0)
-        centerX = x + (self.currentWidthGuess/2)
-        print "x=" + str(bx) + ",  y=" + str(by)
-        print centerX
+        self.ballWidthList.append(bw)
+        self.ballWidthList.popleft()
+        self.ballWidth = round(sum(self.ballWidthList)/10.0)
+        # find goal
+        gx, gy, gw, gh = self.findObject(hsv_image, goal_hsv_color, goal_threshold, 
+                                         openKernSizeForClose, closeKernSizeForFar)
+        self.goalWidthList.append(bw)
+        self.goalWidthList.popleft()
+        self.goalWidth = round(sum(self.goalWidthList)/10.0)
+        # create and populate objectPose message
+        objectPoseMessage = objectPose() 
+        objectPoseMessage.ball_center_x = round(bx + (bw/2))
+        objectPoseMessage.ball_width = self.ballWidth
+        objectPoseMessage.ball_distance = self._calcBallDist(self.ballWidth)
+        objectPoseMessage.goal_center_x = round(gx + (gw/2))
+        objectPoseMessage.goal_width = self.goalWidth
+        objectPoseMessage.goal_distance = self._calcGoalDist(gw)
+        if bx != -1:
+            objectPoseMessage.ball_in_view = 1
+        else:
+            objectPoseMessage.ball_in_view = 0
+        if gx != -1:
+            objectPoseMessage.goal_in_view = 1
+        else:
+            objectPoseMessage.goal_in_view = 0
+        # publish objectPose message
+        self.objectPosePub.publish(objectPoseMessage)
+        # draw ball rectangle on image
         bPoint1, bPoint2 = (bx, by), (bx+bw, by+bh)
         #cv2.rectangle(masked_image, bPoint1, bPoint2, [255, 255, 255], 2)
         cv2.rectangle(hsv_image, bPoint1, bPoint2, [255, 255, 255], 2)
@@ -106,6 +151,7 @@ class CameraNode():
     def _handle_incoming_image(self, raw_ros_image):
         """Convert and process an incoming ROS image"""
         hsv_image = self._convert_raw_2_hsv(raw_ros_image)
+        # objectPose topic published in _process_image
         processed_image = self._process_image(hsv_image)
         #center = self._find_center(mask)
         #if (center is not None) and (self.testing == True):
