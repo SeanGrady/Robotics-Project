@@ -28,3 +28,4 @@ def read_ang():
     angle = struct.unpack('>h', read_vals)
     return angle, read_vals
 
+interact(local=locals())

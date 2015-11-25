@@ -81,6 +81,7 @@ class DriveNode():
         rot = request.rotation
         drive_command = self.make_drive_command(vel, rot)
         self.connection.write(drive_command)
+        return []
 
     def make_angle_request(self):
         req = self.angle_struct.pack(142, 20)

@@ -12,7 +12,7 @@ from collections import deque
 from robotics_project.msg import objectPose
 
 #ball_hsv_color = (179, 184, 143)
-ball_hsv_color = (5, 166, 197)
+ball_hsv_color = (0, 167, 206)
 #ball_threshold = (50, 70, 70)
 ball_threshold = (40, 40, 40)
 goal_hsv_color = (36, 99, 183)
