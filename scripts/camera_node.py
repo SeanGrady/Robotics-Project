@@ -15,12 +15,14 @@ from robotics_project.msg import objectPose
 ball_hsv_color = (5, 166, 197)
 #ball_threshold = (50, 70, 70)
 ball_threshold = (40, 40, 40)
-goal_hsv_color = (33, 33, 33) ##   This still needs to be calculated
-goal_threshold = (50, 70, 70) ##   This still needs to be calculated
+goal_hsv_color = (36, 99, 183)
+goal_threshold = (1, 1, 2)
 openKernSizeForClose = 80
 openKernSizeForFar = 40
 closeKernSizeForClose = 50
 closeKernSizeForFar = 30
+openKernSizeForGoal = 1
+closeKernSizeForGoal = 1
 
 class CameraNode():
     def __init__(self):
@@ -29,7 +31,15 @@ class CameraNode():
         self.testing = False
         self.ballWidthList = deque([0]*10)
         self.ballWidth = 0
+        self.goalLeftList = deque([0]*10)
+        self.goalRightList = deque([0]*10)
+        self.goalTopList = deque([0]*10)
+        self.goalBotList = deque([0]*10)
         self.goalWidthList = deque([0]*10)
+        self.goalLeft = 0
+        self.goalRight = 0
+        self.goalBot = 0
+        self.goalTop = 0
         self.goalWidth = 0
         self.objectPosePub = rospy.Publisher("/camera_node/objectPose", 
                                             objectPose, queue_size = 10)
@@ -64,9 +74,21 @@ class CameraNode():
         contours = contour_struct[0]
         if len(contours)>0:
                 x, y, w, h = cv2.boundingRect(contours[0])  # <<----  This assumes there is only 1 contour
-                return [x, y, w, h]
+                return [x, y, w, h, frame]
         else:
-                return [-1, -1, -1, -1]
+                return [-1, -1, -1, -1, -1]
+
+    # special function to find the goal specifically
+    def findGoal(self, frame, color, threshold, closeKernSize, openKernSize):
+        frame = self._threshold_image(frame, color, threshold)
+        nonzeroRows, nonzeroCols = np.nonzero(frame)
+        if len(nonzeroRows) !=0:
+            top = min(nonzeroRows)
+            bot = max(nonzeroRows)
+            left = min(nonzeroCols)
+            right = max(nonzeroCols)
+            return [left, top, right-left, bot-top, frame]
+        return [-1, -1, -1, -1, frame]
 
     # function to return binary image of color with tolerance threshold
     def _threshold_image(self, hsv_image, color, threshold):
@@ -92,24 +114,39 @@ class CameraNode():
     # function to find ball and goal and transmit the objectPose message to topic objectPose 
     def _process_image(self, hsv_image):
         # find ball
-        bx, by, bw, bh = self.findObject(hsv_image, ball_hsv_color, ball_threshold, 
+        bx, by, bw, bh, bMask = self.findObject(hsv_image, ball_hsv_color, ball_threshold, 
                                          openKernSizeForClose, closeKernSizeForFar)
         self.ballWidthList.append(bw)
         self.ballWidthList.popleft()
         self.ballWidth = round(sum(self.ballWidthList)/10.0)
         # find goal
-        gx, gy, gw, gh = self.findObject(hsv_image, goal_hsv_color, goal_threshold, 
-                                         openKernSizeForClose, closeKernSizeForFar)
-        self.goalWidthList.append(bw)
-        self.goalWidthList.popleft()
-        self.goalWidth = round(sum(self.goalWidthList)/10.0)
+        gx, gy, gw, gh, gMask = self.findGoal(hsv_image, goal_hsv_color, goal_threshold, 
+                                         openKernSizeForGoal, closeKernSizeForGoal)
+        #gx, gy, gw, gh, gMask = self.findObject(hsv_image, goal_hsv_color, goal_threshold, 
+        #                                 openKernSizeForGoal, closeKernSizeForGoal)
+        # update goal estimates
+        #self.goalWidthList.append(gw)
+        #self.goalWidthList.popleft()
+        #self.goalWidth = round(sum(self.goalWidthList)/10.0)
+        self.goalTopList.append(gy)
+        self.goalTopList.popleft()
+        self.goalTop = max(self.goalTopList)
+        self.goalBotList.append(gy+gh)
+        self.goalBotList.popleft()
+        self.goalBot = min(self.goalBotList)
+        self.goalLeftList.append(gx)
+        self.goalLeftList.popleft()
+        self.goalLeft = max(self.goalLeftList)
+        self.goalRightList.append(gx+gw)
+        self.goalRightList.popleft()
+        self.goalRight = min(self.goalRightList)
         # create and populate objectPose message
         objectPoseMessage = objectPose() 
         objectPoseMessage.ball_center_x = round(bx + (bw/2))
         objectPoseMessage.ball_width = self.ballWidth
         objectPoseMessage.ball_distance = self._calcBallDist(self.ballWidth)
-        objectPoseMessage.goal_center_x = round(gx + (gw/2))
-        objectPoseMessage.goal_width = self.goalWidth
+        objectPoseMessage.goal_center_x = round((self.goalLeft+self.goalRight)/2)
+        objectPoseMessage.goal_width = self.goalRight - self.goalLeft
         objectPoseMessage.goal_distance = self._calcGoalDist(gw)
         if bx != -1:
             objectPoseMessage.ball_in_view = 1
@@ -122,10 +159,15 @@ class CameraNode():
         # publish objectPose message
         self.objectPosePub.publish(objectPoseMessage)
         # draw ball rectangle on image
-        bPoint1, bPoint2 = (bx, by), (bx+bw, by+bh)
+        #bPoint1, bPoint2 = (bx, by), (bx+bw, by+bh)
         #cv2.rectangle(masked_image, bPoint1, bPoint2, [255, 255, 255], 2)
-        cv2.rectangle(hsv_image, bPoint1, bPoint2, [255, 255, 255], 2)
+        #cv2.rectangle(hsv_image, bPoint1, bPoint2, [255, 255, 255], 2)
+        # draw goal rectangle on image
+        gPoint1, gPoint2 = (gx, gy), (gx+gw, gy+gh)
+        #cv2.rectangle(masked_image, bPoint1, bPoint2, [255, 255, 255], 2)
+        cv2.rectangle(hsv_image, gPoint1, gPoint2, [255, 255, 255], 2)
         return hsv_image
+        #return cv2.bitwise_and(hsv_image, hsv_image, mask = gMask)
 
     def _find_center(self, mask):
         contours, heirarchy = cv2.findContours(mask,
