@@ -77,7 +77,7 @@ class CameraNode():
 
     # function to calculate distance from width for the ball
     def _calcBallDist(self, bw):
-        if bw > 0:
+        if bw != -1:
             return (4997 * (bw**(-0.95)))
         else:
             return -1
