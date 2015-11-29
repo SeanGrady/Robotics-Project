@@ -12,14 +12,15 @@ from collections import deque
 from robotics_project.msg import objectPose
 
 drawBall = True
-drawGoal = False
+drawGoal = True
 
 #ball_hsv_color = (179, 184, 143)
-ball_hsv_color = (0, 167, 206)
+ball_hsv_color = (1, 162, 132)
 #ball_threshold = (50, 70, 70)
-ball_threshold = (40, 40, 40)
-goal_hsv_color = (36, 99, 183)
-goal_threshold = (1, 1, 2)
+ball_threshold = (8, 20, 20)
+goal_hsv_color = (35, 98, 135)
+goal_threshold = (5, 5, 5)
+goal_num_frames_to_ave = 20
 openKernSizeForClose = 80
 openKernSizeForFar = 40
 closeKernSizeForClose = 50
@@ -30,15 +31,16 @@ closeKernSizeForGoal = 1
 class CameraNode():
     def __init__(self):
         """Start camera_node and setup publishers/subscribers"""
+        self.numPixelsToBelieveGoalIsInView = 5000
         self.bridge = CvBridge()
         self.testing = False
         self.ballWidthList = deque([0]*10)
         self.ballWidth = 0
-        self.goalLeftList = deque([0]*10)
-        self.goalRightList = deque([0]*10)
-        self.goalTopList = deque([0]*10)
-        self.goalBotList = deque([0]*10)
-        self.goalWidthList = deque([0]*10)
+        self.goalLeftList = deque([0]*goal_num_frames_to_ave)
+        self.goalRightList = deque([0]*goal_num_frames_to_ave)
+        self.goalTopList = deque([0]*goal_num_frames_to_ave)
+        self.goalBotList = deque([0]*goal_num_frames_to_ave)
+        self.goalWidthList = deque([0]*goal_num_frames_to_ave)
         self.goalLeft = 0
         self.goalRight = 0
         self.goalBot = 0
@@ -84,7 +86,10 @@ class CameraNode():
     # special function to find the goal specifically
     def findGoal(self, frame, color, threshold, closeKernSize, openKernSize):
         frame = self._threshold_image(frame, color, threshold)
+        numPixelsOfCorrectColor = frame.sum()
         nonzeroRows, nonzeroCols = np.nonzero(frame)
+        if numPixelsOfCorrectColor < self.numPixelsToBelieveGoalIsInView:
+            return [-1, -1, -1, -1, frame]
         if len(nonzeroRows) !=0:
             top = min(nonzeroRows)
             bot = max(nonzeroRows)
