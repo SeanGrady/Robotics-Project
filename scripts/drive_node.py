@@ -95,9 +95,26 @@ class DriveNode():
         counterclockwise angles are positive
         value is capped at -32768, +32767
         """
-        self.connection.write(self.angle_request)
-        raw_angle = self.connection.read(2)
-        angle = struct.unpack('>h', raw_angle)
+        self.connection.write(self.left_encoder_request)
+        raw_left_counts = self.connection.read(2)
+        left_counts = struct.unpack('>H', raw_left_counts)
+        self.connection.write(self.right_encoder_request)
+        raw_right_counts = self.connection.read(2)
+        right_counts = struct.unpack('>H', raw_right_counts)
+        
+        if right_counts > self.right_total:
+            right_diff = right_counts - self.right_total
+        else:
+            right_diff = (self.encoder_max - self.right_total) + right_counts
+        if left_counts > self.left_total:
+            left_diff = left_counts - self.left_total
+        else:
+            left_diff = (self.encoder_max - self.left_total) + left_counts
+
+        left_dist = left_diff* (1/508.8) * (math.pi*72)
+        right_dist = right_diff* (1/508.8) * (math.pi*72)
+
+        angle = (right_dist - left_dist) / 235.0
         return angle
 
 if __name__ == "__main__":

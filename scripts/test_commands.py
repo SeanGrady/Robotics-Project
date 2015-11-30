@@ -25,7 +25,7 @@ def read_ang():
     print ang_req
     connection.write(ang_req)
     read_vals = connection.read(2)
-    angle = struct.unpack('>h', read_vals)
+    angle = struct.unpack('>H', read_vals)
     return angle, read_vals
 
 connection.write(shutdown_cmd)

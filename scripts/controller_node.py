@@ -22,10 +22,15 @@ class ControllerNode():
         rospy.spin()
 
     def handle_incoming_pose(self, objectPose):
-        self.objectPose = objectPose
+        self.objectPose_dict = {
+                'ball_in_view':objectPose.ball_in_view,
+                'ball_center_x':objectPose.ball_center_x,
+                'goal_in_view':objectPose.goal_in_view,
+                'goal_center_x':objectPose.goal_center_x
+        }
 
     def get_object_in_view(self, object_in_view):
-        while not object_in_view: 
+        while not self.objectPose_dict[object_in_view]: 
             self.drive_robot(0, 50)
             rospy.sleep(0.1)
         rospy.sleep(0.5)
@@ -33,9 +38,9 @@ class ControllerNode():
         self.drive_robot(0, 0)
 
     def center_object(self, object_center):
-        offset = object_center - 320
+        offset = self.objectPose_dict[object_center] - 320
         while abs(offset) > 20:
-            offset = object_center - 320
+            offset = self.objectPose_dict[object_center] - 320
             print offset
             #turn_rate = copysign(1.0, offset)*50
             turn_rate = max([offset/(320/50), 25])
@@ -44,24 +49,22 @@ class ControllerNode():
         print "centered ball, sending stop command"
         self.drive_robot(0, 0)
 
-    def get_turn_angle(self):
-
     def play_soccer(self):
         #find the ball
         print "Finding ball..."
-        self.get_object_in_view(self.objectPose.ball_in_view)
+        self.get_object_in_view('ball_in_view')
         print "Ball in view, centering..."
-        self.center_object(self.objectPose.ball_center_x)
+        self.center_object('ball_center_x')
         print "Ball found."
         #find the angle between the ball and the goal
         print "Zeroing angle measurement..."
-        angle = self.get_turn_angle()
+        angle = self.request_angle()
         print "Angle zeroed, finding goal..."
-        self.get_object_in_view(self.objectPose.goal_in_view)
+        self.get_object_in_view('goal_in_view')
         print "Goal in view, centering..."
-        self.center_object(self.objectPose.goal_center_x)
+        self.center_object('goal_center_x')
         print "Goal found."
-        angle = self.get_turn_angle()
+        angle = self.request_angle()
         print "Angle between ball and goal: ", angle
 
         #put the ball between the robot and the goal
