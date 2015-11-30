@@ -11,9 +11,7 @@
 
     <node pkg="robotics_project" name="drive_node" type="drive_node.py" output="screen" />
 
-    <!--
     <node pkg="robotics_project" name="controller_node" type="controller_node.py" output="screen" />
-    -->
 
     <node pkg="rqt_image_view" name="rqt_image_view" type="rqt_image_view" />
 
