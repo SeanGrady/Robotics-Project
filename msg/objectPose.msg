@@ -7,3 +7,5 @@ int8 goal_in_view
 float64 goal_center_x
 int64 goal_width
 float64 goal_distance
+int8 ball_goal_lined_up_maybe
+int8 ball_goal_lined_up
