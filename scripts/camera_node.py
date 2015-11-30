@@ -14,13 +14,13 @@ from robotics_project.msg import objectPose
 drawBall = True
 drawGoal = True
 
-#ball_hsv_color = (179, 184, 143)
 ball_hsv_color = (1, 162, 132)
-#ball_threshold = (50, 70, 70)
 ball_threshold = (8, 20, 20)
 goal_hsv_color = (35, 98, 135)
-goal_threshold = (5, 5, 5)
-goal_num_frames_to_ave = 20
+goal_threshold = (2, 5, 5)
+goal_num_frames_to_ave = 5
+num_frames_to_believe_its_lined_up = 20
+dist_to_consider_lined_up = 30
 openKernSizeForClose = 80
 openKernSizeForFar = 40
 closeKernSizeForClose = 50
@@ -37,10 +37,11 @@ class CameraNode():
         self.ballWidthList = deque([0]*10)
         self.ballWidth = 0
         self.goalLeftList = deque([0]*goal_num_frames_to_ave)
-        self.goalRightList = deque([0]*goal_num_frames_to_ave)
+        self.goalRightList = deque([1000]*goal_num_frames_to_ave)
         self.goalTopList = deque([0]*goal_num_frames_to_ave)
-        self.goalBotList = deque([0]*goal_num_frames_to_ave)
+        self.goalBotList = deque([1000]*(3*goal_num_frames_to_ave))
         self.goalWidthList = deque([0]*goal_num_frames_to_ave)
+        self.ballAndGoalLinedUpList = deque([0]*num_frames_to_believe_its_lined_up)
         self.goalLeft = 0
         self.goalRight = 0
         self.goalBot = 0
@@ -133,29 +134,41 @@ class CameraNode():
         #gx, gy, gw, gh, gMask = self.findObject(hsv_image, goal_hsv_color, goal_threshold, 
         #                                 openKernSizeForGoal, closeKernSizeForGoal)
         # update goal estimates
-        #self.goalWidthList.append(gw)
-        #self.goalWidthList.popleft()
-        #self.goalWidth = round(sum(self.goalWidthList)/10.0)
-        self.goalTopList.append(gy)
-        self.goalTopList.popleft()
-        self.goalTop = max(self.goalTopList)
-        self.goalBotList.append(gy+gh)
-        self.goalBotList.popleft()
-        self.goalBot = min(self.goalBotList)
-        self.goalLeftList.append(gx)
-        self.goalLeftList.popleft()
-        self.goalLeft = max(self.goalLeftList)
-        self.goalRightList.append(gx+gw)
-        self.goalRightList.popleft()
-        self.goalRight = min(self.goalRightList)
+        self.goalWidthList.append(gw)
+        self.goalWidthList.popleft()
+        self.goalWidth = round(sum(self.goalWidthList)/10.0)
+        if gx!=-1:
+            self.goalTopList.append(gy)
+            self.goalTopList.popleft()
+            self.goalTop = max(self.goalTopList)
+            self.goalBotList.append(gy+gh)
+            self.goalBotList.popleft()
+            self.goalBot = min(self.goalBotList)
+            self.goalLeftList.append(gx)
+            self.goalLeftList.popleft()
+            self.goalLeft = max(self.goalLeftList)
+            self.goalRightList.append(gx+gw)
+            self.goalRightList.popleft()
+            self.goalRight = min(self.goalRightList)
+        b_center_x = round(bx + (bw/2))
+        g_center_x = round((self.goalLeft+self.goalRight)/2)
+        distFromBallToGoal = abs(b_center_x - g_center_x)
         # create and populate objectPose message
         objectPoseMessage = objectPose() 
-        objectPoseMessage.ball_center_x = round(bx + (bw/2))
+        objectPoseMessage.ball_center_x = b_center_x
         objectPoseMessage.ball_width = self.ballWidth
         objectPoseMessage.ball_distance = self._calcBallDist(self.ballWidth)
-        objectPoseMessage.goal_center_x = round((self.goalLeft+self.goalRight)/2)
+        objectPoseMessage.goal_center_x = g_center_x
         objectPoseMessage.goal_width = self.goalRight - self.goalLeft
         objectPoseMessage.goal_distance = self._calcGoalDist(gw)
+        if distFromBallToGoal < num_frames_to_believe_its_lined_up and bx!=-1 and gx!=-1:
+            objectPoseMessage.ball_goal_lined_up_maybe = 1
+            self.ballAndGoalLinedUpList.append(1)
+        else:
+            objectPoseMessage.ball_goal_lined_up_maybe = 0
+            self.ballAndGoalLinedUpList.append(0)
+        self.ballAndGoalLinedUpList.popleft();
+        objectPoseMessage.ball_goal_lined_up = min(self.ballAndGoalLinedUpList)
         if bx != -1:
             objectPoseMessage.ball_in_view = 1
         else:
@@ -169,15 +182,12 @@ class CameraNode():
         # draw ball rectangle on image
         if drawBall:            
             bPoint1, bPoint2 = (bx, by), (bx+bw, by+bh)
-            #cv2.rectangle(masked_image, bPoint1, bPoint2, [255, 255, 255], 2)
             cv2.rectangle(hsv_image, bPoint1, bPoint2, [255, 255, 255], 2)
         # draw goal rectangle on image
         if drawGoal:
-            gPoint1, gPoint2 = (gx, gy), (gx+gw, gy+gh)
-            #cv2.rectangle(masked_image, bPoint1, bPoint2, [255, 255, 255], 2)
+            gPoint1, gPoint2 = (self.goalLeft, self.goalTop), (self.goalRight, self.goalBot)
             cv2.rectangle(hsv_image, gPoint1, gPoint2, [255, 255, 255], 2)
         return hsv_image
-        #return cv2.bitwise_and(hsv_image, hsv_image, mask = gMask)
 
     def _find_center(self, mask):
         contours, heirarchy = cv2.findContours(mask,
