@@ -4,7 +4,7 @@ import rospy
 from robotics_project.msg import objectPose
 from robotics_project.srv import *
 from code import interact
-from math import copysign
+from math import *
 from copy import copy
 
 class ControllerNode():
@@ -54,9 +54,25 @@ class ControllerNode():
         print "centered ball, sending stop command"
         self.drive_robot(0, 0)
 
-    def get_behind_ball(self):
-        #TODO
+    def get_behind_ball(self, goal_dist, ball_dist, angle, desired_dist):
+        behind_angle, behind_dist = calc_info_for_plan_nate1(goal_dist, ball_dist, angle, desired_dist)
         return 45.0, 36.0
+
+    def calc_info_for_plan_nate1(self, goal_dist, ball_dist, angle, desired_dist):
+        # plan "nate1": get behind the ball at a 45 degree angle
+        # (so angle goal-ball-robot is 135 degrees) and 30" 
+        # from the ball
+        a = goal_dist
+        b = ball_dist
+        d = desired_dist
+        theta = angle * (math.pi / 180)
+        c = math.sqrt( (a*a)+(b*b)+(2*a*b*math.cos(theta))
+        rho = math.acos( ((a*a)-(b*b)-(c*c)) / (2*a*c) )
+        eta = 3*math.pi / 4
+        x = math.sqrt( (b*b)+(d*d)+(2*b*d*math.cos(eta)) )
+        behind_angle = math.acos( ((d*d)-(b*b)-(x*x)) / (2*b*x) )
+        behind_dist = x
+        return behind_angle, behind_dist
 
     def test_angles(self):
         angle1 = self.request_angle()
@@ -84,9 +100,11 @@ class ControllerNode():
         print "Ball in view, centering..."
         self.center_object('ball_center_x')
         print "Ball found."
+        ball_dist = copy(self.objectPose.ball_distance)
         angle = self.request_angle()
+        desired_dist = 30
         print "Angle between ball and goal: ", angle
-        behind_angle, behind_dist = self.get_behind_ball()
+        behind_angle, behind_dist = self.get_behind_ball(goal_dist, ball_dist, angle, desired_dist)
         print "going to turn ", behind_angle
         self.turn_angle(behind_angle)
         print "going to move ", behind_dist
