@@ -56,6 +56,7 @@ find_package(catkin REQUIRED COMPONENTS
    requestDrive.srv
    requestAngle.srv
    requestStrike.srv
+   driveDist.srv
  )
 
 ## Generate actions in the 'action' folder

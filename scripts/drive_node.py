@@ -27,6 +27,8 @@ class DriveNode():
         rospy.init_node('drive_node')
         self.drive_service = rospy.Service('requestDrive', requestDrive,
                                  self.handle_requestDrive)
+        self.drive_dist_service = rospy.Service('driveDist', driveDist,
+                                 self.handle_driveDist)
         self.angle_service = rospy.Service('requestAngle', requestAngle,
                                            self.handle_requestAngle)
         self.strike_service = rospy.Service('requestStrike', requestStrike,
@@ -103,6 +105,25 @@ class DriveNode():
         self.right_total = right_counts
         self.left_total = left_counts
 
+    def handle_driveDist(self, request):
+        dist = request.distance
+        dist_mm = dist * 25.4   #mm per inch
+        dist_counts = dist_mm * (1/(72*math.pi)) * 508.8
+        vel = 100
+        rot = 0
+        drive_command = self.make_drive_command(vel, rot)
+        stop_command = self.make_drive_command(0,0)
+        self.encoder_count_reset()
+        left_start = self.left_total
+        right_start = self.right_total
+        self.connection.write(drive_command)
+        while (((self.right_total - right_start) < dist_counts) 
+               and ((self.left_total - left_start) < dist_counts)):
+            rospy.sleep(0.1)
+            self.encoder_count_reset()
+        self.connection.write(stop_command)
+        return "Distance driven."
+
     def handle_requestAngle(self, request):
         """
         send [142] [Packet ID]
@@ -121,22 +142,23 @@ class DriveNode():
         right_counts = right_counts[0]
         
         if right_counts > self.right_total:
+            right_diff = self.right_total + (self.encoder_max - right_counts)
+        else:
             right_diff = right_counts - self.right_total
+        if left_counts < self.left_total:
+            left_diff = left_counts + (self.encoder_max - self.left_total)
         else:
-            right_diff = (self.encoder_max - self.right_total) + right_counts
-        if left_counts > self.left_total:
             left_diff = left_counts - self.left_total
-        else:
-            left_diff = (self.encoder_max - self.left_total) + left_counts
 
         left_dist = left_diff* (1/508.8) * (math.pi*72)
         right_dist = right_diff* (1/508.8) * (math.pi*72)
 
-        angle = (right_dist - left_dist) / 235.0
+        angle_rad = (right_dist - left_dist) / 235.0
+        angle_deg = angle_rad*(180/math.pi)
 
         self.right_total = right_counts
         self.left_total = left_counts
-        return angle
+        return abs(angle_deg)
 
 if __name__ == "__main__":
     driver_node = DriveNode()

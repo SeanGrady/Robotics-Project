@@ -11,6 +11,7 @@ class ControllerNode():
         rospy.init_node('controller_node')
         self.drive_request = rospy.ServiceProxy('requestDrive', requestDrive)
         self.angle_request = rospy.ServiceProxy('requestAngle', requestAngle)
+        self.distance_request = rospy.ServiceProxy('driveDist', driveDist)
         self.pose_subscriber = rospy.Subscriber(
                 "/camera_node/objectPose",
                 objectPose,
@@ -22,11 +23,13 @@ class ControllerNode():
         rospy.spin()
 
     def handle_incoming_pose(self, objectPose):
+        self.objectPose = objectPose
         self.objectPose_dict = {
                 'ball_in_view':objectPose.ball_in_view,
                 'ball_center_x':objectPose.ball_center_x,
                 'goal_in_view':objectPose.goal_in_view,
-                'goal_center_x':objectPose.goal_center_x
+                'goal_center_x':objectPose.goal_center_x,
+                'ball_distance':objectPose.ball_distance
         }
 
     def get_object_in_view(self, object_in_view):
@@ -41,10 +44,8 @@ class ControllerNode():
         offset = self.objectPose_dict[object_center] - 320
         while abs(offset) > 20:
             offset = self.objectPose_dict[object_center] - 320
-            print offset
-            #turn_rate = copysign(1.0, offset)*50
-            turn_rate = max([offset/(320/50), 25])
-            print turn_rate
+            #turn_rate = max([abs(offset)/(320/50), 25])
+            turn_rate = 40
             self.drive_robot(0, turn_rate)
         print "centered ball, sending stop command"
         self.drive_robot(0, 0)
@@ -66,6 +67,10 @@ class ControllerNode():
         print "Goal found."
         angle = self.request_angle()
         print "Angle between ball and goal: ", angle
+        self.get_object_in_view('ball_in_view')
+        self.center_object('ball_center_x')
+        drive_success = self.drive_distance(self.objectPose.ball_distance)
+        print drive_success
 
         #put the ball between the robot and the goal
 
@@ -77,6 +82,14 @@ class ControllerNode():
             self.drive_request(velocity, rotation)
         except rospy.ServiceException, e:
             print e
+
+    def drive_distance(self, distance):
+        rospy.wait_for_service('driveDist')
+        try:
+            response = self.distance_request(distance)
+        except rospy.ServiceException, e:
+            print e
+        return response
 
     def request_angle(self):
         rospy.wait_for_service('requestAngle')
