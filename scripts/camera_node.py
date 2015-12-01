@@ -117,7 +117,7 @@ class CameraNode():
     # function to calculate distance from width for the goal ############# <--- Still needs to be done!!!!
     def _calcGoalDist(self, gw):
         if gw!=-1:
-            return (13525 * (gw**(-1.24)))
+            return (17263 * (gw**(-0.96)))
         else:
             return -1
         
