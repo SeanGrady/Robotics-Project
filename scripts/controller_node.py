@@ -5,6 +5,7 @@ from robotics_project.msg import objectPose
 from robotics_project.srv import *
 from code import interact
 from math import copysign
+from copy import copy
 
 class ControllerNode():
     def __init__(self):
@@ -12,6 +13,8 @@ class ControllerNode():
         self.drive_request = rospy.ServiceProxy('requestDrive', requestDrive)
         self.angle_request = rospy.ServiceProxy('requestAngle', requestAngle)
         self.distance_request = rospy.ServiceProxy('driveDist', driveDist)
+        self.turn_request = rospy.ServiceProxy('turnAngle', turnAngle)
+        self.strike_request= rospy.ServiceProxy('requestStrike', requestStrike)
         self.pose_subscriber = rospy.Subscriber(
                 "/camera_node/objectPose",
                 objectPose,
@@ -50,31 +53,37 @@ class ControllerNode():
         print "centered ball, sending stop command"
         self.drive_robot(0, 0)
 
+    def get_behind_ball(self):
+        #TODO
+        return 45.0, 36.0
+
     def play_soccer(self):
-        #find the ball
+        print "Finding Goal"
+        self.get_object_in_view('goal_in_view')
+        print "Goal in view, centering..."
+        self.center_object('goal_center_x')
+        print "Goal found."
+        goal_dist = copy(self.objectPose.goal_distance)
+        print "Zeroing angle measurement..."
+        angle = self.request_angle()
         print "Finding ball..."
         self.get_object_in_view('ball_in_view')
         print "Ball in view, centering..."
         self.center_object('ball_center_x')
         print "Ball found."
-        #find the angle between the ball and the goal
-        print "Zeroing angle measurement..."
-        angle = self.request_angle()
-        print "Angle zeroed, finding goal..."
-        self.get_object_in_view('goal_in_view')
-        print "Goal in view, centering..."
-        self.center_object('goal_center_x')
-        print "Goal found."
         angle = self.request_angle()
         print "Angle between ball and goal: ", angle
+        behind_angle, behind_dist = self.get_behind_ball()
+        self.turn_angle(away_angle)
+        self.drive_distance(behind_dist)
+        print "Now behind ball."
         self.get_object_in_view('ball_in_view')
         self.center_object('ball_center_x')
-        drive_success = self.drive_distance(self.objectPose.ball_distance)
+        print "Approaching ball..."
+        drive_success = self.drive_distance(self.objectPose.ball_distance - 12)
         print drive_success
-
-        #put the ball between the robot and the goal
-
-        #push the ball into the goal
+        print "Striking!"
+        self.request_strike()
 
     def drive_robot(self, velocity, rotation):
         rospy.wait_for_service('requestDrive')
@@ -90,6 +99,21 @@ class ControllerNode():
         except rospy.ServiceException, e:
             print e
         return response
+
+    def turn_angle(self, degrees):
+        rospy.wait_for_service('turnAngle')
+        try:
+            response = self.turn_request(degrees)
+        except rospy.ServiceException, e:
+            print e
+        return response
+
+    def request_strike(self):
+        rospy.wait_for_service('requestStrike')
+        try:
+            self.strike_request()
+        except rospy.ServiceException, e:
+            print e
 
     def request_angle(self):
         rospy.wait_for_service('requestAngle')
