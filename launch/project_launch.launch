@@ -1,5 +1,5 @@
 <launch>
-    <env name = "GSCAM_CONFIG" value = "v4l2src device=/dev/video0 !
+    <env name = "GSCAM_CONFIG" value = "v4l2src device=/dev/video1 !
         video/x-raw-rgb,framerate-25/1 ! ffmpegcolorspace" />
 
     <node pkg="gscam" name="web_cam" type="gscam">

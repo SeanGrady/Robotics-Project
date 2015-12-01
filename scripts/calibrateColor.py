@@ -70,7 +70,7 @@ def processFrame(frame, colorWeWant):
 ##############   Main   ##############  
 
 cap = cv2.VideoCapture()
-cap.open(0)
+cap.open(1)
 #cap.open('ball.avi')
 
 # Find mid point

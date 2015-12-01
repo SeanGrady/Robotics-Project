@@ -16,8 +16,9 @@ drawGoal = True
 
 ball_hsv_color = (1, 162, 132)
 ball_threshold = (8, 20, 20)
-goal_hsv_color = (35, 98, 135)
-goal_threshold = (2, 5, 5)
+#goal_hsv_color = (35, 98, 135) # Green?
+goal_hsv_color = (102, 210, 80)
+goal_threshold = (3, 8, 8)
 goal_num_frames_to_ave = 5
 num_frames_to_believe_its_lined_up = 20
 dist_to_consider_lined_up = 30
@@ -184,7 +185,7 @@ class CameraNode():
             bPoint1, bPoint2 = (bx, by), (bx+bw, by+bh)
             cv2.rectangle(hsv_image, bPoint1, bPoint2, [255, 255, 255], 2)
         # draw goal rectangle on image
-        if drawGoal:
+        if drawGoal and gx != -1:
             gPoint1, gPoint2 = (self.goalLeft, self.goalTop), (self.goalRight, self.goalBot)
             cv2.rectangle(hsv_image, gPoint1, gPoint2, [255, 255, 255], 2)
         return hsv_image
