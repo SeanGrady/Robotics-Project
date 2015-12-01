@@ -27,6 +27,8 @@ class DriveNode():
         rospy.init_node('drive_node')
         self.drive_service = rospy.Service('requestDrive', requestDrive,
                                  self.handle_requestDrive)
+        self.turn_service = rospy.Service('turnAngle', turnAngle,
+                                 self.handle_turnAngle)
         self.drive_dist_service = rospy.Service('driveDist', driveDist,
                                  self.handle_driveDist)
         self.angle_service = rospy.Service('requestAngle', requestAngle,
@@ -134,12 +136,13 @@ class DriveNode():
         left_start = self.left_total
         drive_command = self.make_drive_command(0, 100)
         stop_command = self.make_drive_command(0, 0)
+        self.connection.write(drive_command)
         while (((right_start - self.right_total) < counts_per_wheel)
                and ((self.left_total - left_start) < counts_per_wheel)):
             rospy.sleep(0.1)
             self.encoder_count_reset()
         self.connection.write(stop_command)
-        return "Angle turned: ", ang_deg
+        return "Angle turned"
 
     def handle_requestAngle(self, request):
         """

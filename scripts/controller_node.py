@@ -64,6 +64,7 @@ class ControllerNode():
         self.center_object('goal_center_x')
         print "Goal found."
         goal_dist = copy(self.objectPose.goal_distance)
+        rospy.sleep(1.0)
         print "Zeroing angle measurement..."
         angle = self.request_angle()
         print "Finding ball..."
@@ -74,7 +75,9 @@ class ControllerNode():
         angle = self.request_angle()
         print "Angle between ball and goal: ", angle
         behind_angle, behind_dist = self.get_behind_ball()
-        self.turn_angle(away_angle)
+        print "going to turn ", behind_angle
+        self.turn_angle(behind_angle)
+        print "going to move ", behind_dist
         self.drive_distance(behind_dist)
         print "Now behind ball."
         self.get_object_in_view('ball_in_view')
