@@ -100,6 +100,6 @@ encoder_count_reset()
 print left_total, right_total
 
 
-#connection.write(shutdown_cmd)
-#connection.close()
+connection.write(shutdown_cmd)
+connection.close()
 interact(local=locals())

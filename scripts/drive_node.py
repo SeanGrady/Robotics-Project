@@ -127,7 +127,9 @@ class DriveNode():
 
     def handle_turnAngle(self, request):
         ang_deg = request.degrees
+        print "requested turn angle of ", ang_deg
         ang_rad = ang_deg * (math.pi / 180)
+        print "this is ", ang_rad, " in radians."
         mm_per_wheel = ang_rad * (235 / 2.0)
         rot_per_wheel = mm_per_wheel * (1/(math.pi*72))
         counts_per_wheel = rot_per_wheel * 508.8
@@ -160,21 +162,35 @@ class DriveNode():
         raw_right_counts = self.connection.read(2)
         right_counts = struct.unpack('>H', raw_right_counts)
         right_counts = right_counts[0]
+        print "left counts = ", left_counts
+        print "left baseline = ", self.left_total
+        print "right counts = ", right_counts
+        print "right baseline = ", self.right_total
         
-        if right_counts > self.right_total:
-            right_diff = self.right_total + (self.encoder_max - right_counts)
-        else:
-            right_diff = right_counts - self.right_total
-        if left_counts < self.left_total:
-            left_diff = left_counts + (self.encoder_max - self.left_total)
+        if left_counts > self.left_total:
+            print "left rollover detected"
+            left_diff = self.left_total + (self.encoder_max - left_counts)
+            print "left diff = ", left_diff
         else:
             left_diff = left_counts - self.left_total
+            print "left diff = ", left_diff
+        if right_counts < self.right_total:
+            print "right rollover detected"
+            right_diff = right_counts + (self.encoder_max - self.right_total)
+            print "right diff = ", right_diff
+        else:
+            right_diff = right_counts - self.right_total
+            print "right diff = ", right_diff
 
         left_dist = left_diff* (1/508.8) * (math.pi*72)
+        print "left mm distance = ", left_dist
         right_dist = right_diff* (1/508.8) * (math.pi*72)
+        print "right mm distance = ", right_dist
 
         angle_rad = (right_dist - left_dist) / 235.0
+        print "angle turned (radians) = ", angle_rad
         angle_deg = angle_rad*(180/math.pi)
+        print "angle turned (degrees) = ", angle_deg
 
         self.right_total = right_counts
         self.left_total = left_counts

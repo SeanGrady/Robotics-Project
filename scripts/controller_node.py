@@ -22,7 +22,8 @@ class ControllerNode():
         )
         rospy.sleep(5)
         print "playing soccer"
-        self.play_soccer()
+        #self.play_soccer()
+        self.test_angles()
         rospy.spin()
 
     def handle_incoming_pose(self, objectPose):
@@ -56,6 +57,17 @@ class ControllerNode():
     def get_behind_ball(self):
         #TODO
         return 45.0, 36.0
+
+    def test_angles(self):
+        angle1 = self.request_angle()
+        print "Zeroing angle... ", angle1
+        self.drive_robot(0, 75)
+        print "turning robot"
+        rospy.sleep(2)
+        print "stopping robot"
+        self.drive_robot(0, 0)
+        angle2 = self.request_angle()
+        print "angle turned: ", angle2
 
     def play_soccer(self):
         print "Finding Goal"
