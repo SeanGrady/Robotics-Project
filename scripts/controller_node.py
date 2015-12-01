@@ -22,8 +22,8 @@ class ControllerNode():
         )
         rospy.sleep(5)
         print "playing soccer"
-        #self.play_soccer()
-        self.test_angles()
+        self.play_soccer()
+        #self.test_angles()
         rospy.spin()
 
     def handle_incoming_pose(self, objectPose):
