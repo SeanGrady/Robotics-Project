@@ -31,7 +31,7 @@ closeKernSizeForGoal = 1
 class CameraNode():
     def __init__(self):
         """Start camera_node and setup publishers/subscribers"""
-        self.numPixelsToBelieveGoalIsInView = 5000
+        self.numPixelsToBelieveGoalIsInView = 10000
         self.bridge = CvBridge()
         self.testing = False
         self.ballWidthList = deque([0]*10)

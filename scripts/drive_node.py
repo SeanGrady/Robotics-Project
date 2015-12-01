@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import serial
+import math
 import rospy
 import struct
 from robotics_project.srv import *
@@ -8,9 +9,10 @@ from robotics_project.srv import *
 class DriveNode():
     def __init__(self):
         self.connection = None
+        self.encoder_max = 65535
         self.drive_struct = struct.Struct('>Bhh')
         self.angle_struct = struct.Struct('>BB')
-        self.angle_request = self.make_angle_request()
+        self.right_encoder_request, self.left_encoder_request = self.make_angle_request()
         self.port = '/dev/ttyUSB0'
         self.command_dict = {
             'start':self.make_raw_command('128'),
@@ -30,6 +32,7 @@ class DriveNode():
         self.strike_service = rospy.Service('requestStrike', requestStrike,
                                             self.strike_forward)
         self.connect_robot()
+        self.encoder_count_reset()
         rospy.spin()
 
     def strike_forward(self):
@@ -84,8 +87,21 @@ class DriveNode():
         return []
 
     def make_angle_request(self):
-        req = self.angle_struct.pack(142, 20)
-        return req
+        r_req = self.angle_struct.pack(142, 44)
+        l_req = self.angle_struct.pack(142, 43)
+        return l_req, r_req
+
+    def encoder_count_reset(self):
+        self.connection.write(self.left_encoder_request)
+        raw_left_counts = self.connection.read(2)
+        left_counts = struct.unpack('>H', raw_left_counts)
+        self.connection.write(self.right_encoder_request)
+        raw_right_counts = self.connection.read(2)
+        right_counts = struct.unpack('>H', raw_right_counts)
+        left_counts = left_counts[0]
+        right_counts = right_counts[0]
+        self.right_total = right_counts
+        self.left_total = left_counts
 
     def handle_requestAngle(self, request):
         """
@@ -98,9 +114,11 @@ class DriveNode():
         self.connection.write(self.left_encoder_request)
         raw_left_counts = self.connection.read(2)
         left_counts = struct.unpack('>H', raw_left_counts)
+        left_counts = left_counts[0]
         self.connection.write(self.right_encoder_request)
         raw_right_counts = self.connection.read(2)
         right_counts = struct.unpack('>H', raw_right_counts)
+        right_counts = right_counts[0]
         
         if right_counts > self.right_total:
             right_diff = right_counts - self.right_total
@@ -115,6 +133,9 @@ class DriveNode():
         right_dist = right_diff* (1/508.8) * (math.pi*72)
 
         angle = (right_dist - left_dist) / 235.0
+
+        self.right_total = right_counts
+        self.left_total = left_counts
         return angle
 
 if __name__ == "__main__":
