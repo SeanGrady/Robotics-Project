@@ -37,7 +37,7 @@ class DriveNode():
         self.encoder_count_reset()
         rospy.spin()
 
-    def strike_forward(self):
+    def strike_forward(self, request):
         vel = 500
         rot = 0
         strike_cmd = self.make_drive_command(vel, rot)
@@ -47,7 +47,6 @@ class DriveNode():
         self.connection.write(strike_cmd)
         rospy.sleep(.7)
         self.connection.write(stop_cmd)
-        return "Striking"
 
     def make_drive_command(self, vel, rot):
         #this is to keep vl and vr between -500 and 500 
@@ -109,10 +108,10 @@ class DriveNode():
         dist = request.distance
         dist_mm = dist * 25.4   #mm per inch
         dist_counts = dist_mm * (1/(72*math.pi)) * 508.8
-        vel = 100
+        vel = 300
         rot = 0
         drive_command = self.make_drive_command(vel, rot)
-        stop_command = self.make_drive_command(0,0)
+        stop_command = self.make_drive_command(0, 0)
         self.encoder_count_reset()
         left_start = self.left_total
         right_start = self.right_total
@@ -123,6 +122,24 @@ class DriveNode():
             self.encoder_count_reset()
         self.connection.write(stop_command)
         return "Distance driven."
+
+    def handle_turnAngle(self, request):
+        ang_deg = request.degrees
+        ang_rad = ang_deg * (math.pi / 180)
+        mm_per_wheel = ang_rad * (235 / 2.0)
+        rot_per_wheel = mm_per_wheel * (1/(math.pi*72))
+        counts_per_wheel = rot_per_wheel * 508.8
+        self.encoder_count_reset()
+        right_start = self.right_total
+        left_start = self.left_total
+        drive_command = self.make_drive_command(0, 100)
+        stop_command = self.make_drive_command(0, 0)
+        while (((right_start - self.right_total) < counts_per_wheel)
+               and ((self.left_total - left_start) < counts_per_wheel)):
+            rospy.sleep(0.1)
+            self.encoder_count_reset()
+        self.connection.write(stop_command)
+        return "Angle turned: ", ang_deg
 
     def handle_requestAngle(self, request):
         """
@@ -158,7 +175,7 @@ class DriveNode():
 
         self.right_total = right_counts
         self.left_total = left_counts
-        return abs(angle_deg)
+        return angle_deg
 
 if __name__ == "__main__":
     driver_node = DriveNode()
