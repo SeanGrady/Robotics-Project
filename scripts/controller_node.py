@@ -66,11 +66,12 @@ class ControllerNode():
         b = ball_dist
         d = desired_dist
         theta = angle * (math.pi / 180)
-        c = math.sqrt( (a*a)+(b*b)+(2*a*b*math.cos(theta))
-        rho = math.acos( ((a*a)-(b*b)-(c*c)) / (2*a*c) )
-        eta = 3*math.pi / 4
-        x = math.sqrt( (b*b)+(d*d)+(2*b*d*math.cos(eta)) )
-        behind_angle = math.acos( ((d*d)-(b*b)-(x*x)) / (2*b*x) )
+        c = math.sqrt( (a*a)+(b*b)-(2*a*b*math.cos(theta)) )
+        rho = math.acos( ((a*a)-(b*b)-(c*c)) / (-2*b*c) )
+        #eta = 3*math.pi / 4
+        eta = math.pi - rho
+        x = math.sqrt( (b*b)+(d*d)-(2*b*d*math.cos(eta)) )
+        behind_angle = math.acos( ((d*d)-(b*b)-(x*x)) / (-2*b*x) )
         behind_dist = x
         return behind_angle, behind_dist
 
