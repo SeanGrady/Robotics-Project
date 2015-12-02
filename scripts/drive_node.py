@@ -47,7 +47,7 @@ class DriveNode():
         print "Strike_cmd", strike_cmd
         print "stop_cmd", stop_cmd
         self.connection.write(strike_cmd)
-        rospy.sleep(.7)
+        rospy.sleep(1.5)
         self.connection.write(stop_cmd)
 
     def make_drive_command(self, vel, rot):

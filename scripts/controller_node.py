@@ -4,7 +4,7 @@ import rospy
 from robotics_project.msg import objectPose
 from robotics_project.srv import *
 from code import interact
-from math import *
+import math
 from copy import copy
 
 class ControllerNode():
@@ -55,8 +55,8 @@ class ControllerNode():
         self.drive_robot(0, 0)
 
     def get_behind_ball(self, goal_dist, ball_dist, angle, desired_dist):
-        behind_angle, behind_dist = calc_info_for_plan_nate1(goal_dist, ball_dist, angle, desired_dist)
-        return 45.0, 36.0
+        behind_angle, behind_dist = self.calc_info_for_plan_nate1(goal_dist, ball_dist, angle, desired_dist)
+        return behind_angle, behind_dist
 
     def calc_info_for_plan_nate1(self, goal_dist, ball_dist, angle, desired_dist):
         # plan "nate1": get behind the ball at a 45 degree angle
@@ -66,9 +66,10 @@ class ControllerNode():
         b = ball_dist
         d = desired_dist
         theta = angle * (math.pi / 180)
-        c = math.sqrt( (a*a)+(b*b)+(2*a*b*math.cos(theta))
+        c = math.sqrt( (a*a)+(b*b)+(2*a*b*math.cos(theta)) )
         rho = math.acos( ((a*a)-(b*b)-(c*c)) / (2*a*c) )
-        eta = 3*math.pi / 4
+        #eta = (3*math.pi / 4) - rho
+        eta = math.pi - rho
         x = math.sqrt( (b*b)+(d*d)+(2*b*d*math.cos(eta)) )
         behind_angle = math.acos( ((d*d)-(b*b)-(x*x)) / (2*b*x) )
         behind_dist = x
@@ -94,6 +95,7 @@ class ControllerNode():
         print "Goal in view, centering..."
         self.center_object('goal_center_x')
         print "Goal found."
+        rospy.sleep(2)
         goal_dist = copy(self.objectPose.goal_distance)
         rospy.sleep(1.0)
         print "Zeroing angle measurement..."
@@ -103,10 +105,13 @@ class ControllerNode():
         print "Ball in view, centering..."
         self.center_object('ball_center_x')
         print "Ball found."
+        rospy.sleep(2)
         ball_dist = copy(self.objectPose.ball_distance)
         angle = self.request_angle()
-        desired_dist = 30
+        desired_dist = 40
         print "Angle between ball and goal: ", angle
+        print "Ball distance: ", ball_dist
+        print "Goal distance: ", goal_dist
         rospy.sleep(.25)
         behind_angle, behind_dist = self.get_behind_ball(goal_dist, ball_dist, angle, desired_dist)
         print "going to turn ", behind_angle
@@ -119,6 +124,7 @@ class ControllerNode():
         self.get_object_in_view('ball_in_view')
         self.center_object('ball_center_x')
         rospy.sleep(.25)
+        rospy.sleep(2)
         print "Ball is ", self.objectPose.ball_distance, " inches away."
         print "Approaching ball..."
         ball_diff = self.objectPose.ball_distance - 20
@@ -165,7 +171,7 @@ class ControllerNode():
             angle = self.angle_request()
         except rospy.ServiceException, e:
             print e
-        return angle
+        return angle.angle
 
     def build_model(self, objectPose):
         """Calculate world coordinates of ball and goal, robot is (0,0)"""
