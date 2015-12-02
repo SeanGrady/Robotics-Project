@@ -90,14 +90,14 @@ def calc_angle():
     left_total = left_counts
     return abs(angle_deg)
 
-encoder_count_reset()
-print left_total, right_total
+#encoder_count_reset()
+#print left_total, right_total
 
-angle = calc_angle()
-print angle
+#angle = calc_angle()
+#print angle
 
-encoder_count_reset()
-print left_total, right_total
+#encoder_count_reset()
+#print left_total, right_total
 
 
 connection.write(shutdown_cmd)

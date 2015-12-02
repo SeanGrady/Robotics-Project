@@ -68,6 +68,9 @@ class ControllerNode():
         self.drive_robot(0, 0)
         angle2 = self.request_angle()
         print "angle turned: ", angle2
+        print "Attempting to turn 45 degrees"
+        response = self.turn_angle(45)
+        print response
 
     def play_soccer(self):
         print "Finding Goal"
@@ -87,16 +90,24 @@ class ControllerNode():
         angle = self.request_angle()
         print "Angle between ball and goal: ", angle
         behind_angle, behind_dist = self.get_behind_ball()
+        rospy.sleep(.25)
         print "going to turn ", behind_angle
         self.turn_angle(behind_angle)
+        rospy.sleep(.25)
         print "going to move ", behind_dist
         self.drive_distance(behind_dist)
         print "Now behind ball."
+        rospy.sleep(.25)
         self.get_object_in_view('ball_in_view')
         self.center_object('ball_center_x')
+        rospy.sleep(.25)
+        print "Ball is ", self.objectPose.ball_distance, " inches away."
         print "Approaching ball..."
-        drive_success = self.drive_distance(self.objectPose.ball_distance - 12)
+        ball_diff = self.objectPose.ball_distance - 20
+        print "Driving ", ball_diff
+        drive_success = self.drive_distance(ball_diff)
         print drive_success
+        rospy.sleep(.25)
         print "Striking!"
         self.request_strike()
 

@@ -127,9 +127,7 @@ class DriveNode():
 
     def handle_turnAngle(self, request):
         ang_deg = request.degrees
-        print "requested turn angle of ", ang_deg
         ang_rad = ang_deg * (math.pi / 180)
-        print "this is ", ang_rad, " in radians."
         mm_per_wheel = ang_rad * (235 / 2.0)
         rot_per_wheel = mm_per_wheel * (1/(math.pi*72))
         counts_per_wheel = rot_per_wheel * 508.8
@@ -139,8 +137,8 @@ class DriveNode():
         drive_command = self.make_drive_command(0, 100)
         stop_command = self.make_drive_command(0, 0)
         self.connection.write(drive_command)
-        while (((right_start - self.right_total) < counts_per_wheel)
-               and ((self.left_total - left_start) < counts_per_wheel)):
+        while (((self.right_total - right_start) < counts_per_wheel)
+               and ((left_start - self.left_total) < counts_per_wheel)):
             rospy.sleep(0.1)
             self.encoder_count_reset()
         self.connection.write(stop_command)
