@@ -38,7 +38,7 @@ class ControllerNode():
 
     def get_object_in_view(self, object_in_view):
         while not self.objectPose_dict[object_in_view]: 
-            self.drive_robot(0, 50)
+            self.drive_robot(0, 40)
             rospy.sleep(0.1)
         rospy.sleep(0.5)
         print "ball is in view"
@@ -49,7 +49,7 @@ class ControllerNode():
         while abs(offset) > 20:
             offset = self.objectPose_dict[object_center] - 320
             #turn_rate = max([abs(offset)/(320/50), 25])
-            turn_rate = 40
+            turn_rate = 30
             self.drive_robot(0, turn_rate)
         print "centered ball, sending stop command"
         self.drive_robot(0, 0)
@@ -66,12 +66,12 @@ class ControllerNode():
         b = ball_dist
         d = desired_dist
         theta = angle * (math.pi / 180)
-        c = math.sqrt( (a*a)+(b*b)+(2*a*b*math.cos(theta)) )
-        rho = math.acos( ((a*a)-(b*b)-(c*c)) / (2*b*c) )
-        #eta = (3*math.pi / 4) - rho
+        c = math.sqrt( (a*a)+(b*b)-(2*a*b*math.cos(theta)) )
+        rho = math.acos( ((a*a)-(b*b)-(c*c)) / (-2*b*c) )
+        #eta = 3*math.pi / 4
         eta = math.pi - rho
-        x = math.sqrt( (b*b)+(d*d)+(2*b*d*math.cos(eta)) )
-        behind_angle_rad = math.acos( ((d*d)-(b*b)-(x*x)) / (2*b*x) )
+        x = math.sqrt( (b*b)+(d*d)-(2*b*d*math.cos(eta)) )
+        behind_angle_rad = math.acos( ((d*d)-(b*b)-(x*x)) / (-2*b*x) )
         behind_angle = behind_angle_rad * (180 / math.pi)
         behind_dist = x
         return behind_angle, behind_dist
@@ -109,12 +109,13 @@ class ControllerNode():
         rospy.sleep(2)
         ball_dist = copy(self.objectPose.ball_distance)
         angle = self.request_angle()
-        desired_dist = 40
+        desired_dist = 25
         print "Angle between ball and goal: ", angle
         print "Ball distance: ", ball_dist
         print "Goal distance: ", goal_dist
         rospy.sleep(.25)
         behind_angle, behind_dist = self.get_behind_ball(goal_dist, ball_dist, angle, desired_dist)
+        behind_dist = behind_dist * 1.25    #shameless hack
         print "going to turn ", behind_angle
         self.turn_angle(behind_angle)
         rospy.sleep(.25)
@@ -133,6 +134,11 @@ class ControllerNode():
         drive_success = self.drive_distance(ball_diff)
         print drive_success
         rospy.sleep(.25)
+        print "Finding ball..."
+        self.get_object_in_view('ball_in_view')
+        print "Ball in view, centering..."
+        self.center_object('ball_center_x')
+        print "Ball found."
         print "Striking!"
         self.request_strike()
 
