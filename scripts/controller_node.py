@@ -20,7 +20,7 @@ class ControllerNode():
                 objectPose,
                 self.handle_incoming_pose
         )
-        rospy.sleep(5)
+        rospy.sleep(10)
         print "playing soccer"
         self.play_soccer()
         #self.test_angles()
@@ -115,7 +115,8 @@ class ControllerNode():
         print "Goal distance: ", goal_dist
         rospy.sleep(.25)
         behind_angle, behind_dist = self.get_behind_ball(goal_dist, ball_dist, angle, desired_dist)
-        behind_dist = behind_dist * 1.25    #shameless hack
+        behind_dist = behind_dist * 1.35    #shameless hack
+        behind_angle = behind_angle * 0.75
         print "going to turn ", behind_angle
         self.turn_angle(behind_angle)
         rospy.sleep(.25)

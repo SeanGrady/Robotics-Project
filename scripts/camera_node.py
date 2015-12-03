@@ -14,7 +14,7 @@ from robotics_project.msg import objectPose
 drawBall = True
 drawGoal = True
 
-ball_hsv_color = (1, 162, 132)
+ball_hsv_color = (0, 168, 138)
 ball_threshold = (8, 20, 20)
 #goal_hsv_color = (35, 98, 135) # Green?
 goal_hsv_color = (102, 210, 80)
